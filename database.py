@@ -1,24 +1,26 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase,sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import DeclarativeBase
+from dotenv import load_dotenv
+import os
 
-SQLALCHEMY_DATABASE_URL= "sqlite:///./blog.db"
+load_dotenv()
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={
-        "check_same_thread":False
-    }
+SQLALCHEMY_DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URL")
+SQLALCHEMY_DATABASE_URL_ASYNC = os.getenv("SQLALCHEMY_DATABASE_URL_ASYNC")
+
+engine = create_async_engine(
+    SQLALCHEMY_DATABASE_URL_ASYNC, connect_args={"check_same_thread": False}
 )
 
-SessionLocal = sessionmaker(
-    autoflush=False,
-    autocommit = False,
-    bind = engine
+AsyncSessionLocal = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
 )
+
 
 class Base(DeclarativeBase):
     pass
 
-def get_db():
-    with SessionLocal() as db:
-        yield db
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
