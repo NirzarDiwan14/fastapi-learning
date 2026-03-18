@@ -18,7 +18,7 @@ import models
 from database import Base, engine, get_db
 
 
-from routers import posts,users
+from routers import posts, users
 
 
 @asynccontextmanager
@@ -36,16 +36,8 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/media", StaticFiles(directory="media"), name="media")
 
-app.include_router(
-    router=users.router,
-    prefix="/api/users",
-    tags = ["Users"]
-)
-app.include_router(
-    router=posts.router,
-    prefix="/api/posts",
-    tags = ["Posts"]
-)
+app.include_router(router=users.router, prefix="/api/users", tags=["Users"])
+app.include_router(router=posts.router, prefix="/api/posts", tags=["Posts"])
 
 
 templates = Jinja2Templates(directory="templates")
@@ -55,7 +47,9 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/posts", include_in_schema=False, name="posts")
 async def home(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
     result = await db.execute(
-        select(models.Post).options(selectinload(models.Post.author)),
+        select(models.Post)
+        .options(selectinload(models.Post.author))
+        .order_by(models.Post.date_posted.desc()),
     )
     posts = result.scalars().all()
     return templates.TemplateResponse(
@@ -103,7 +97,8 @@ async def user_posts_page(
     result = await db.execute(
         select(models.Post)
         .options(selectinload(models.Post.author))
-        .where(models.Post.user_id == user_id),
+        .where(models.Post.user_id == user_id)
+        .order_by(models.Post.date_posted.desc()),
     )
     posts = result.scalars().all()
     return templates.TemplateResponse(
