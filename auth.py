@@ -15,7 +15,7 @@ def hash_password(password: str) -> str:
     return password_hash.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password: str, hash_password: str) -> bool:
     return password_hash.verify(plain_password, hash_password)
 
 
@@ -33,3 +33,17 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         to_encode, settings.secret_key.get_secret_value(), algorithm=settings.algorithm
     )
     return encoded_jwt
+
+def verify_access_token(token: str) -> str | None:
+    """Verify a JWT access token and return the subject (user id) if valid."""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key.get_secret_value(),
+            algorithms=[settings.algorithm],
+            options={"require": ["exp", "sub"]},
+        )
+    except jwt.InvalidTokenError:
+        return None
+    else:
+        return payload.get("sub")
